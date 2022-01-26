@@ -1,0 +1,66 @@
+#!/bin/bash
+
+available_actions=( "help" "run-debug" "run-release" "debug" "release" )
+action_description=( "prints this message" "\033[35m[DEFAULT]\033[39m compiles and runs the application with debug flags" "compiles and runs the application with optimization flags" "compiles the application with debug flags" "compiles the application with optimization flags" )
+
+array_contains () { 
+    local array="$1[@]"
+    local seeking=$2
+    local res=1
+    for element in "${!array}"; do
+        if [[ $element == "$seeking" ]]; then
+            res=0
+            break
+        fi
+    done
+    return $res
+}
+
+if ! [[ -v 1 ]]; then
+    action="run-debug"
+else
+    action=$1
+fi
+
+if ! array_contains "available_actions" "$action"; then
+    echo -e "\033[31mInvalid option! Try 'help' to get an overview of the options.\033[39m"
+    exit
+fi
+
+if [[ $action == "help" ]]; then
+    i=0
+    echo -e "\033[35mefmake\033[36m - yet another make-like utility written in bash\033[32m\n\nOptions:\033[39m"
+    for element in "${available_actions[@]}"; do
+        echo -e "\033[36m$element\033[39m - ${action_description[$i]}"
+        let i++
+    done
+    exit
+fi
+
+echo -e "\033[33mBUILDING APPLICATION...\033[39m"
+
+if [[ $action == "release" || $action == "run-release" ]]; then
+    flags="-O2 -pthread -lm"
+    build_dir="bin/release"
+elif [[ $action == "debug" || $action == "run-debug" ]]; then
+    flags="-Wall -Wextra -Wshadow -Wconversion -Wno-sign-conversion -Wfloat-equal -fsanitize=address,undefined -D_GLIBCXX_DEBUG -ggdb3"
+    build_dir="bin/debug"
+fi
+
+mkdir -p $build_dir
+clang tetris.c -o $build_dir/tetris $flags
+
+if [[ $? == 1 ]]; then
+    echo -e "\033[31mBUILD FAILED!\033[39m"
+    exit
+fi
+
+echo -e "\033[32mBUILD SUCCESSFUL!\033[39m"
+
+if [[ $action != "run-release" && $action != "run-debug" ]]; then
+    exit
+fi
+
+echo -e "\033[35mRunning the application...\033[39m"
+
+./$build_dir/tetris
