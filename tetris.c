@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <termios.h>
+#include <unistd.h>
 
 // Constants
 #define HEIGHT 20
@@ -112,27 +114,62 @@ void drawTetromino(struct Point position, int tetrominoId, int rotation) {
 	drawFrame();
 }
 
+void setupTermiosAttributes() {
+	struct termios old = {0};
+	if (tcgetattr(0, &old) < 0)
+		perror("[ERROR] tcsetattr()");
+
+	old.c_lflag &= ~ICANON;
+	if (tcsetattr(0, TCSANOW, &old) < 0)
+		perror("[ERROR] tcsetattr ICANON");
+}
+
+void initialize() {
+	setupBoard();
+	setupTermiosAttributes();
+
+	drawFrame();
+}
+
 int main() {
+	initialize();
+
 	struct timespec time;
 	time.tv_sec = 0;
 	time.tv_nsec = 1000 * 1000 * (1000 / TPS);
 
-	int rotation = 0, currentTetromino = 0;
-
-	setupBoard();
+	int rotation = 0, currentTetromino = 4;
 	struct Point basePosition = { WIDTH / 2, HEIGHT / 4 * 3 };
 
 	while(1) {
-		drawTetromino(basePosition, currentTetromino, rotation);
+		char x;
+		read(0, &x, 1);
 
-		rotation++;
-		if (rotation == 4) {
-			rotation %= 4;
-			currentTetromino++;
-			currentTetromino %= 7;
+		switch (x) {
+			case 'w': {
+				rotation++;
+				break;
+			}
+			
+			case 's': {
+				basePosition.y--;
+				break;
+			}
+
+			case 'a': {
+				basePosition.x--;
+				break;
+			}
+
+			case 'd': {
+				basePosition.x++;
+				break;
+			}
 		}
 
-		if (nanosleep(&time, NULL) < 0)
-			perror("[ERROR] nanosleep()");
+		drawTetromino(basePosition, currentTetromino, rotation);
+
+		// if (nanosleep(&time, NULL) < 0)
+		// 	perror("[ERROR] nanosleep()");
 	}
 }
