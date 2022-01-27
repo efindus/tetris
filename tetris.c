@@ -25,7 +25,19 @@ struct Point tetrominos[][4] = {
     { { 0, 0 }, { 1, 0 }, { -1, 0 }, { -1, 1 } },
     { { 0, 0 }, { -1, 0 }, { 0, 1 }, { 1, 1 } },
     { { 0, 0 }, { 1, 0 }, { 0, 1 }, { -1, 1 } },
-    { { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, 1 } }
+    { { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, 1 } },
+};
+
+// Tetromino colors
+// 0 -> O shape; 1 -> I shape; 2 -> L shape; 3 -> J shape; 4 -> S shape; 5 -> Z shape; 6 -> T shape
+char* tetrominoColors[] = {
+    "\x1b[48;5;226m  ",
+    "\x1b[48;5;51m  ",
+    "\x1b[48;5;208m  ",
+    "\x1b[44m  ",
+    "\x1b[42m  ",
+    "\x1b[41m  ",
+    "\x1b[45m  ",
 };
 
 char board[WIDTH + 2][HEIGHT + 1][25];
@@ -85,23 +97,27 @@ int main() {
 	time.tv_sec = 0;
 	time.tv_nsec = 1000 * 1000 * (1000 / TPS);
 
-    int rotation = 0;
+    int rotation = 0, currentTetromino = 0;
 
     while(1) {
         setupBoard();
 
         int baseX = WIDTH / 2, baseY = HEIGHT / 4 * 3;
 
-        struct Point* tetromino = getRotatedTetromino(6, rotation);
+        struct Point* tetromino = getRotatedTetromino(currentTetromino, rotation);
         for(int i = 0; i < 4; i++) {
-            strcpy(board[baseX + tetromino[i].x + 1][baseY + tetromino[i].y + 1], BORDER);
+            strcpy(board[baseX + tetromino[i].x + 1][baseY + tetromino[i].y + 1], tetrominoColors[currentTetromino]);
         }
         free(tetromino);
 
         drawFrame();
 
         rotation++;
-        rotation %= 4;
+        if (rotation == 4) {
+            rotation %= 4;
+            currentTetromino++;
+            currentTetromino %= 7;
+        }
 
         if (nanosleep(&time, NULL) < 0)
 			perror("[ERROR] nanosleep()");
