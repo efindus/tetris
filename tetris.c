@@ -41,6 +41,7 @@ char* tetrominoColors[] = {
 };
 
 char board[WIDTH + 2][HEIGHT + 1][25];
+char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
 
 void setupBoard() {
 	for (int x = 1; x < WIDTH + 1; x++)
@@ -61,7 +62,7 @@ void drawFrame() {
 
 	for (int y = HEIGHT; y >= 0; y--) {
 		for (int x = 0; x < WIDTH + 2; x++)
-			printf("%s", board[x][y]);
+			printf("%s", frameBuffer[x][y]);
 
 		printf("\x1b[0m\n");
 	}
@@ -92,6 +93,25 @@ struct Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	return returnValue;
 };
 
+// Draws selected tetromino using contents of board array as background (it only ensures nothing is set out of the array, so no collision checks are performed here).
+// If tetrominoId is -1 it will ignore it and simply draw contents of the board array
+void drawTetromino(struct Point position, int tetrominoId, int rotation) {
+	for (int x = 0; x < WIDTH + 2; x++)
+		for (int y = 0; y < HEIGHT + 1; y++)
+			strcpy(frameBuffer[x][y], board[x][y]);
+
+	if (tetrominoId != -1) {
+		struct Point* tetromino = getRotatedTetromino(tetrominoId, rotation);
+		for(int i = 0; i < 4; i++) {
+			int x = position.x + tetromino[i].x + 1, y = position.y + tetromino[i].y + 1;
+			if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) strcpy(frameBuffer[x][y], tetrominoColors[tetrominoId]);
+		}
+		free(tetromino);
+	}
+
+	drawFrame();
+}
+
 int main() {
 	struct timespec time;
 	time.tv_sec = 0;
@@ -99,18 +119,11 @@ int main() {
 
 	int rotation = 0, currentTetromino = 0;
 
+	setupBoard();
+	struct Point basePosition = { WIDTH / 2, HEIGHT / 4 * 3 };
+
 	while(1) {
-		setupBoard();
-
-		int baseX = WIDTH / 2, baseY = HEIGHT / 4 * 3;
-
-		struct Point* tetromino = getRotatedTetromino(currentTetromino, rotation);
-		for(int i = 0; i < 4; i++) {
-			strcpy(board[baseX + tetromino[i].x + 1][baseY + tetromino[i].y + 1], tetrominoColors[currentTetromino]);
-		}
-		free(tetromino);
-
-		drawFrame();
+		drawTetromino(basePosition, currentTetromino, rotation);
 
 		rotation++;
 		if (rotation == 4) {
