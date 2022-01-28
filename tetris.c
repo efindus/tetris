@@ -1,3 +1,4 @@
+#include <sys/random.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,12 +6,14 @@
 #include <termios.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <limits.h>
 
 // Constants
 #define HEIGHT 20
 #define WIDTH 1
 #define TPS 2
 
+// Toggles
 #define DEBUG 1
 
 // Drawing blocks
@@ -83,6 +86,13 @@ int strcomp(char* str1, char* str2, int checkLength) {
 	return 1;
 }
 
+int crandom(int min, int max) {
+	unsigned int value;
+	getrandom(&value, sizeof(value), GRND_RANDOM);
+
+	return (int)((long long)value * (max - min + 1) / UINT_MAX) + min;
+}
+
 void reportError(char* message) {
 #if DEBUG == 1
 	perror(message);
@@ -145,16 +155,16 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
  * Draws selected tetromino using contents of board array as background (it only ensures nothing is set out of the array, so no collision checks are performed here).
  * If tetrominoId is -1 it will ignore it and simply draw contents of the board array
  */
-void drawTetromino(Point position, int tetrominoId, int rotation) {
+void drawTetromino(TetrominoState tetrominoState) {
 	for (int x = 0; x < WIDTH + 2; x++)
 		for (int y = 0; y < HEIGHT + 1; y++)
 			strcpy(frameBuffer[x][y], board[x][y]);
 
-	if (tetrominoId != -1) {
-		Point* tetromino = getRotatedTetromino(tetrominoId, rotation);
+	if (tetrominoState.id != -1) {
+		Point* tetromino = getRotatedTetromino(tetrominoState.id, tetrominoState.rotation);
 		for(int i = 0; i < 4; i++) {
-			int x = position.x + tetromino[i].x + 1, y = position.y + tetromino[i].y + 1;
-			if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) strcpy(frameBuffer[x][y], tetrominoColors[tetrominoId]);
+			int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
+			if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) strcpy(frameBuffer[x][y], tetrominoColors[tetrominoState.id]);
 		}
 		free(tetromino);
 	}
@@ -166,12 +176,12 @@ void drawTetromino(Point position, int tetrominoId, int rotation) {
  * Checks whether passed tetromino at selected position will collide with anything in board array.
  * This will ignore any positions outside the board. Returns 1 if collision happens and 0 when it doesn't.
  */
-int checkCollision(Point position, int tetrominoId, int rotation) {
+int checkCollision(TetrominoState tetrominoState) {
 	int result = 0;
-	Point* tetromino = getRotatedTetromino(tetrominoId, rotation);
+	Point* tetromino = getRotatedTetromino(tetrominoState.id, tetrominoState.rotation);
 	
 	for(int i = 0; i < 4; i++) {
-		int x = position.x + tetromino[i].x + 1, y = position.y + tetromino[i].y + 1;
+		int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
 		if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) {
 			if (!strcomp(board[x][y], VOID, 1)) {
 				result = 1;
@@ -186,11 +196,11 @@ int checkCollision(Point position, int tetrominoId, int rotation) {
 
 void *screenManager() {
 	pthread_mutex_lock(&drawMutex);
-	drawTetromino(currentTetromino.position, currentTetromino.id, currentTetromino.rotation);
+	drawTetromino(currentTetromino);
 
 	while(1) {
 		pthread_cond_wait(&triggerDraw, &drawMutex);
-		drawTetromino(currentTetromino.position, currentTetromino.id, currentTetromino.rotation);
+		drawTetromino(currentTetromino);
 	}
 }
 
@@ -237,9 +247,10 @@ void initialize() {
 int main() {
 	initialize();
 
-	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT / 4 * 3 };
-	currentTetromino.id = 3;
-	currentTetromino.rotation = 0;
+	TetrominoState tempTetromino;
+	tempTetromino.position = (Point){ WIDTH / 2, HEIGHT - 1 };
+	tempTetromino.id = 3;
+	tempTetromino.rotation = 0;
 
 	while(1) {
 		char x;
