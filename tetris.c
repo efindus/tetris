@@ -62,6 +62,7 @@ char board[WIDTH + 2][HEIGHT + 1][25];
 char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
 
 TetrominoState currentTetromino;
+int rowsCleared = 0;
 
 pthread_t renderThread;
 pthread_t gameplayThread;
@@ -124,6 +125,8 @@ void drawFrame() {
 
 		printf("\x1b[0m\n");
 	}
+
+	printf("\x1b[38;5;2m[SCORE] Rows cleared: %d\x1b[0m\n", rowsCleared);
 }
 
 /*
@@ -215,7 +218,6 @@ int checkCollision(TetrominoState tetrominoState) {
 	return result;
 }
 
-// TODO: award points
 /*
  * Checks for full rows and clears them
  */
@@ -240,6 +242,7 @@ void cleanupBoard() {
 			}
 
 			y--;
+			rowsCleared++;
 		}
 	}
 }
