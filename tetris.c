@@ -229,8 +229,8 @@ void cleanupBoard() {
 			for (int x2 = 1; x2 < WIDTH + 1; x2++) {
 				strcpy(board[x2][HEIGHT], VOID);
 			}
-		}
-		y--;
+
+			y--;
 	}
 }
 
