@@ -172,6 +172,18 @@ void drawTetromino(TetrominoState tetrominoState) {
 	drawFrame();
 }
 
+/* 
+ * Puts selected tetromino inside the board array (it only ensures nothing is set out of the array, so no collision checks are performed here).
+ */
+void imprintTetromino(TetrominoState tetrominoState) {
+	Point* tetromino = getRotatedTetromino(tetrominoState.id, tetrominoState.rotation);
+	for(int i = 0; i < 4; i++) {
+		int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
+		if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) strcpy(board[x][y], tetrominoColors[tetrominoState.id]);
+	}
+	free(tetromino);
+}
+
 /*
  * Checks whether passed tetromino at selected position will collide with anything in board array.
  * This will ignore any positions outside the board. Returns 1 if collision happens and 0 when it doesn't.
