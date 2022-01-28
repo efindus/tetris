@@ -10,7 +10,7 @@
 
 // Constants
 #define HEIGHT 20
-#define WIDTH 1
+#define WIDTH 15
 #define TPS 2
 
 // Toggles
@@ -223,21 +223,24 @@ void startGameplayManager() {
 	pthread_create(&gameplayThread, NULL, gameplayManager, NULL);
 }
 
+void createNewTetromino() {
+	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT - 2 };
+	currentTetromino.id = crandom(0, 6);
+	currentTetromino.rotation = 0;
+}
+
 void setupTermiosAttributes() {
 	struct termios old = {0};
 	if (tcgetattr(0, &old) < 0)
 		reportError("[ERROR] tcgetattr()");
 
-	old.c_lflag &= ~ICANON;
+	old.c_lflag &= ~ICANON & ~ECHO;
 	if (tcsetattr(0, TCSANOW, &old) < 0)
 		reportError("[ERROR] tcsetattr()");
 }
 
 void initialize() {
-	currentTetromino.position = (Point){ 0, 0 };
-	currentTetromino.id = -1;
-	currentTetromino.rotation = 0;
-
+	createNewTetromino();
 	setupBoard();
 	setupTermiosAttributes();
 
@@ -247,40 +250,41 @@ void initialize() {
 int main() {
 	initialize();
 
-	TetrominoState tempTetromino;
-	tempTetromino.position = (Point){ WIDTH / 2, HEIGHT - 1 };
-	tempTetromino.id = 3;
-	tempTetromino.rotation = 0;
+	TetrominoState tempTetromino = currentTetromino;
 
 	while(1) {
 		char x;
 		read(0, &x, 1);
 
-		pthread_mutex_lock(&drawMutex);
 		switch (x) {
 			case 'w': {
-				currentTetromino.rotation++;
-				currentTetromino.rotation %= 4;
+				tempTetromino.rotation++;
+				tempTetromino.rotation %= 4;
 				break;
 			}
-			
 			case 's': {
-				currentTetromino.position.y--;
+				tempTetromino.position.y--;
 				break;
 			}
-
 			case 'a': {
-				currentTetromino.position.x--;
+				tempTetromino.position.x--;
 				break;
 			}
-
 			case 'd': {
-				currentTetromino.position.x++;
+				tempTetromino.position.x++;
 				break;
 			}
 		}
 
-		pthread_cond_signal(&triggerDraw);
-		pthread_mutex_unlock(&drawMutex);
+		if (!checkCollision(tempTetromino)) {
+			pthread_mutex_lock(&drawMutex);
+
+			currentTetromino = tempTetromino;
+
+			pthread_cond_signal(&triggerDraw);
+			pthread_mutex_unlock(&drawMutex);
+		} else {
+			tempTetromino = currentTetromino;
+		}
 	}
 }
