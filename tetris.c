@@ -149,7 +149,16 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	}
 
 	return returnValue;
-};
+}
+
+/*
+ * Randomly selects new tetromino type and places it in the default position
+ */
+void createNewTetromino() {
+	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT - 2 };
+	currentTetromino.id = crandom(0, 6);
+	currentTetromino.rotation = 0;
+}
 
 /* 
  * Draws selected tetromino using contents of board array as background (it only ensures nothing is set out of the array, so no collision checks are performed here).
@@ -231,7 +240,25 @@ void cleanupBoard() {
 			}
 
 			y--;
+		}
 	}
+}
+
+void tick() {
+	TetrominoState tempTetromino = currentTetromino;
+	tempTetromino.position.y--;
+
+	pthread_mutex_lock(&drawMutex);
+	if (checkCollision(tempTetromino)) {
+		imprintTetromino(currentTetromino);
+		cleanupBoard();
+		createNewTetromino();
+	} else {
+		currentTetromino = tempTetromino;
+	}
+
+	pthread_cond_signal(&triggerDraw);
+	pthread_mutex_unlock(&drawMutex);
 }
 
 void *screenManager() {
@@ -256,17 +283,13 @@ void *gameplayManager() {
 	while (1) {
 		if (nanosleep(&time, NULL) < 0)
 			reportError("[ERROR] nanosleep()");
+
+		tick();
 	}
 }
 
 void startGameplayManager() {
 	pthread_create(&gameplayThread, NULL, gameplayManager, NULL);
-}
-
-void createNewTetromino() {
-	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT - 2 };
-	currentTetromino.id = crandom(0, 6);
-	currentTetromino.rotation = 0;
 }
 
 void setupTermiosAttributes() {
@@ -291,11 +314,13 @@ int main() {
 	initialize();
 
 	TetrominoState tempTetromino = currentTetromino;
+	int isFirstTime = 1;
 
 	while (1) {
 		char x;
 		read(0, &x, 1);
 
+		tempTetromino = currentTetromino;
 		switch (x) {
 			case 'w': {
 				tempTetromino.rotation++;
@@ -325,6 +350,11 @@ int main() {
 			pthread_mutex_unlock(&drawMutex);
 		} else {
 			tempTetromino = currentTetromino;
+		}
+
+		if (isFirstTime) {
+			isFirstTime = 0;
+			startGameplayManager();
 		}
 	}
 }
