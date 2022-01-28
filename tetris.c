@@ -162,7 +162,7 @@ void drawTetromino(TetrominoState tetrominoState) {
 
 	if (tetrominoState.id != -1) {
 		Point* tetromino = getRotatedTetromino(tetrominoState.id, tetrominoState.rotation);
-		for(int i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; i++) {
 			int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
 			if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) strcpy(frameBuffer[x][y], tetrominoColors[tetrominoState.id]);
 		}
@@ -177,7 +177,7 @@ void drawTetromino(TetrominoState tetrominoState) {
  */
 void imprintTetromino(TetrominoState tetrominoState) {
 	Point* tetromino = getRotatedTetromino(tetrominoState.id, tetrominoState.rotation);
-	for(int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
 		if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) strcpy(board[x][y], tetrominoColors[tetrominoState.id]);
 	}
@@ -192,7 +192,7 @@ int checkCollision(TetrominoState tetrominoState) {
 	int result = 0;
 	Point* tetromino = getRotatedTetromino(tetrominoState.id, tetrominoState.rotation);
 	
-	for(int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
 		if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) {
 			if (!strcomp(board[x][y], VOID, 1)) {
@@ -206,11 +206,39 @@ int checkCollision(TetrominoState tetrominoState) {
 	return result;
 }
 
+// TODO: award points
+/*
+ * Checks for full rows and clears them
+ */
+void cleanupBoard() {
+	for (int y = 1; y < HEIGHT + 1; y++) {
+		int amount = 0;
+		for (int x = 1; x < WIDTH + 1; x++) {
+			if (!strcomp(board[x][y], VOID, 1)) {
+				amount++;
+			}
+		}
+
+		if (amount == WIDTH) {
+			for (int y2 = y + 1; y2 < HEIGHT + 1; y2++) {
+				for (int x2 = 1; x2 < WIDTH + 1; x2++) {
+					strcpy(board[x2][y2 - 1], board[x2][y2]);
+				}
+			}
+
+			for (int x2 = 1; x2 < WIDTH + 1; x2++) {
+				strcpy(board[x2][HEIGHT], VOID);
+			}
+		}
+		y--;
+	}
+}
+
 void *screenManager() {
 	pthread_mutex_lock(&drawMutex);
 	drawTetromino(currentTetromino);
 
-	while(1) {
+	while (1) {
 		pthread_cond_wait(&triggerDraw, &drawMutex);
 		drawTetromino(currentTetromino);
 	}
@@ -225,7 +253,7 @@ void *gameplayManager() {
 	time.tv_sec = 0;
 	time.tv_nsec = 1000 * 1000 * (1000 / TPS);
 
-	while(1) {
+	while (1) {
 		if (nanosleep(&time, NULL) < 0)
 			reportError("[ERROR] nanosleep()");
 	}
@@ -264,7 +292,7 @@ int main() {
 
 	TetrominoState tempTetromino = currentTetromino;
 
-	while(1) {
+	while (1) {
 		char x;
 		read(0, &x, 1);
 
