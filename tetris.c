@@ -59,7 +59,9 @@ char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
 TetrominoState currentTetromino;
 
 pthread_t renderThread;
-pthread_cond_t drawCV = PTHREAD_COND_INITIALIZER;
+// Use this condition variable to render a frame after locking drawMutex
+pthread_cond_t triggerDraw = PTHREAD_COND_INITIALIZER;
+// Lock this mutex before modifying contents of currentTetromino
 pthread_mutex_t drawMutex = PTHREAD_MUTEX_INITIALIZER;
 
 void setupBoard() {
@@ -134,15 +136,13 @@ void drawTetromino(Point position, int tetrominoId, int rotation) {
 }
 
 void *screenManager() {
+	pthread_mutex_lock(&drawMutex);
 	drawTetromino(currentTetromino.position, currentTetromino.id, currentTetromino.rotation);
 
 	while(1) {
-		pthread_mutex_lock(&drawMutex);
-		pthread_cond_wait(&drawCV, &drawMutex);
+		pthread_cond_wait(&triggerDraw, &drawMutex);
 
 		drawTetromino(currentTetromino.position, currentTetromino.id, currentTetromino.rotation);
-
-		pthread_mutex_unlock(&drawMutex);
 	}
 }
 
@@ -210,7 +210,7 @@ int main() {
 			}
 		}
 
-		pthread_cond_signal(&drawCV);
+		pthread_cond_signal(&triggerDraw);
 		pthread_mutex_unlock(&drawMutex);
 
 		// if (nanosleep(&time, NULL) < 0)
