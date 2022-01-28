@@ -8,8 +8,10 @@
 
 // Constants
 #define HEIGHT 20
-#define WIDTH 15
+#define WIDTH 1
 #define TPS 2
+
+#define DEBUG 1
 
 // Drawing blocks
 #define VOID "\x1b[0m  "
@@ -79,6 +81,14 @@ int strcomp(char* str1, char* str2, int checkLength) {
 	}
 
 	return 1;
+}
+
+void reportError(char* message) {
+#if DEBUG == 1
+	perror(message);
+	// Because the screen is often cleared if we won't exit it will be easy to miss the message
+	exit(1);
+#endif
 }
 
 void setupBoard() {
@@ -189,7 +199,14 @@ void setupScreenManager() {
 }
 
 void *gameplayManager() {
-	while(1) {}
+	struct timespec time;
+	time.tv_sec = 0;
+	time.tv_nsec = 1000 * 1000 * (1000 / TPS);
+
+	while(1) {
+		if (nanosleep(&time, NULL) < 0)
+			reportError("[ERROR] nanosleep()");
+	}
 }
 
 void startGameplayManager() {
@@ -199,11 +216,11 @@ void startGameplayManager() {
 void setupTermiosAttributes() {
 	struct termios old = {0};
 	if (tcgetattr(0, &old) < 0)
-		perror("[ERROR] tcgetattr()");
+		reportError("[ERROR] tcgetattr()");
 
 	old.c_lflag &= ~ICANON;
 	if (tcsetattr(0, TCSANOW, &old) < 0)
-		perror("[ERROR] tcsetattr()");
+		reportError("[ERROR] tcsetattr()");
 }
 
 void initialize() {
@@ -219,10 +236,6 @@ void initialize() {
 
 int main() {
 	initialize();
-
-	struct timespec time;
-	time.tv_sec = 0;
-	time.tv_nsec = 1000 * 1000 * (1000 / TPS);
 
 	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT / 4 * 3 };
 	currentTetromino.id = 3;
@@ -258,8 +271,5 @@ int main() {
 
 		pthread_cond_signal(&triggerDraw);
 		pthread_mutex_unlock(&drawMutex);
-
-		// if (nanosleep(&time, NULL) < 0)
-		// 	perror("[ERROR] nanosleep()");
 	}
 }
