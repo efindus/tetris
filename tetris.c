@@ -24,8 +24,10 @@ typedef struct TetrominoState {
 	int id, rotation;
 } TetrominoState;
 
-// Tetrominos
-// 0 -> O shape; 1 -> I shape; 2 -> L shape; 3 -> J shape; 4 -> S shape; 5 -> Z shape; 6 -> T shape
+/* 
+ * Tetrominos.
+ * 0 -> O shape; 1 -> I shape; 2 -> L shape; 3 -> J shape; 4 -> S shape; 5 -> Z shape; 6 -> T shape
+ */
 Point tetrominos[][4] = {
 	{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } },
 	{ { 0, 0 }, { 1, 0 }, { -1, 0 }, { -2, 0 } },
@@ -36,8 +38,10 @@ Point tetrominos[][4] = {
 	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, 1 } },
 };
 
-// Tetromino colors
-// 0 -> O shape; 1 -> I shape; 2 -> L shape; 3 -> J shape; 4 -> S shape; 5 -> Z shape; 6 -> T shape
+/* 
+ * Tetromino colors.
+ * 0 -> O shape; 1 -> I shape; 2 -> L shape; 3 -> J shape; 4 -> S shape; 5 -> Z shape; 6 -> T shape
+ */
 char* tetrominoColors[] = {
 	"\x1b[48;5;226m  ",
 	"\x1b[48;5;51m  ",
@@ -85,7 +89,7 @@ void drawFrame() {
 
 /*
  * rotation -> (0, 1, 2, 3) ordered as in here https://cdn.wikimg.net/en/strategywiki/images/7/7f/Tetris_rotation_super.png
- * but for I shaped tetromino there are only two rotations
+ * but for I shaped tetromino there are only two possible rotations
  */
 Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	Point* returnValue = malloc(sizeof(Point) * 4);
@@ -108,8 +112,10 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	return returnValue;
 };
 
-// Draws selected tetromino using contents of board array as background (it only ensures nothing is set out of the array, so no collision checks are performed here).
-// If tetrominoId is -1 it will ignore it and simply draw contents of the board array
+/* 
+ * Draws selected tetromino using contents of board array as background (it only ensures nothing is set out of the array, so no collision checks are performed here).
+ * If tetrominoId is -1 it will ignore it and simply draw contents of the board array
+ */
 void drawTetromino(Point position, int tetrominoId, int rotation) {
 	for (int x = 0; x < WIDTH + 2; x++)
 		for (int y = 0; y < HEIGHT + 1; y++)
