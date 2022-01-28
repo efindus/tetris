@@ -59,10 +59,27 @@ char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
 TetrominoState currentTetromino;
 
 pthread_t renderThread;
+pthread_t gameplayThread;
 // Use this condition variable to render a frame after locking drawMutex
 pthread_cond_t triggerDraw = PTHREAD_COND_INITIALIZER;
 // Lock this mutex before modifying contents of currentTetromino
 pthread_mutex_t drawMutex = PTHREAD_MUTEX_INITIALIZER;
+
+int strcomp(char* str1, char* str2, int checkLength) {
+	if (checkLength && strlen(str1) != strlen(str2)) return 0;
+
+	if (strlen(str1) > strlen(str2)) {
+		char* tmp = str2;
+		str2 = str1;
+		str1 = tmp;
+	}
+
+	for (int i = 0; i < strlen(str1); i++) {
+		if (str1[i] != str2[i]) return 0;
+	}
+
+	return 1;
+}
 
 void setupBoard() {
 	for (int x = 1; x < WIDTH + 1; x++)
@@ -135,19 +152,48 @@ void drawTetromino(Point position, int tetrominoId, int rotation) {
 	drawFrame();
 }
 
+/*
+ * Checks whether passed tetromino at selected position will collide with anything in board array.
+ * This will ignore any positions outside the board. Returns 1 if collision happens and 0 when it doesn't.
+ */
+int checkCollision(Point position, int tetrominoId, int rotation) {
+	int result = 0;
+	Point* tetromino = getRotatedTetromino(tetrominoId, rotation);
+	
+	for(int i = 0; i < 4; i++) {
+		int x = position.x + tetromino[i].x + 1, y = position.y + tetromino[i].y + 1;
+		if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) {
+			if (!strcomp(board[x][y], VOID, 1)) {
+				result = 1;
+				break;
+			}
+		}
+	}
+
+	free(tetromino);
+	return result;
+}
+
 void *screenManager() {
 	pthread_mutex_lock(&drawMutex);
 	drawTetromino(currentTetromino.position, currentTetromino.id, currentTetromino.rotation);
 
 	while(1) {
 		pthread_cond_wait(&triggerDraw, &drawMutex);
-
 		drawTetromino(currentTetromino.position, currentTetromino.id, currentTetromino.rotation);
 	}
 }
 
 void setupScreenManager() {
 	pthread_create(&renderThread, NULL, screenManager, NULL);
+}
+
+void *gameplayManager() {
+	while(1) {}
+}
+
+void startGameplayManager() {
+	pthread_create(&gameplayThread, NULL, gameplayManager, NULL);
 }
 
 void setupTermiosAttributes() {
