@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <limits.h>
+#include <signal.h>
 
 // Constants
 #define HEIGHT 20
@@ -15,6 +16,7 @@
 
 // Toggles
 #define DEBUG 1
+#define USE_LINUX_ONLY_QOL_FEATURES 1
 
 // Drawing blocks
 #define VOID "\x1b[0m  "
@@ -305,7 +307,23 @@ void setupTermiosAttributes() {
 		reportError("[ERROR] tcsetattr()");
 }
 
+void resetKeypressDelay() {
+	system("xset r rate 600 25");
+	printf("As this program uses xset to modify input delay here is a quick tooltip how to bring back your favorite setting: xset r rate <delay> <repeats/s> or xset r rate for defaults.\n");
+}
+
+void signalHandler() {
+	exit(0);
+}
+
 void initialize() {
+#if USE_LINUX_ONLY_QOL_FEATURES == 1
+	system("xset r rate 150 25");
+	atexit(resetKeypressDelay);
+	at_quick_exit(*resetKeypressDelay);
+	signal(SIGTERM, signalHandler);
+	signal(SIGINT, signalHandler);
+#endif
 	createNewTetromino();
 	setupBoard();
 	setupTermiosAttributes();
