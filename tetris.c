@@ -156,15 +156,6 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	return returnValue;
 }
 
-/*
- * Randomly selects new tetromino type and places it in the default position
- */
-void createNewTetromino() {
-	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT - 2 };
-	currentTetromino.id = crandom(0, 6);
-	currentTetromino.rotation = 0;
-}
-
 /* 
  * Draws selected tetromino using contents of board array as background (it only ensures nothing is set out of the array, so no collision checks are performed here).
  * If tetrominoId is -1 it will ignore it and simply draw contents of the board array
@@ -218,6 +209,20 @@ int checkCollision(TetrominoState tetrominoState) {
 
 	free(tetromino);
 	return result;
+}
+
+/*
+ * Randomly selects new tetromino type and places it in the default position
+ */
+void createNewTetromino() {
+	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT - 2 };
+	currentTetromino.id = crandom(0, 6);
+	currentTetromino.rotation = 0;
+
+	if (checkCollision(currentTetromino)) {
+		printf("\x1b[38;5;196mGame Over!\x1b[0m\n");
+		exit(0);
+	}
 }
 
 /*
@@ -324,8 +329,8 @@ void initialize() {
 	signal(SIGTERM, signalHandler);
 	signal(SIGINT, signalHandler);
 #endif
-	createNewTetromino();
 	setupBoard();
+	createNewTetromino();
 	setupTermiosAttributes();
 
 	setupScreenManager();
