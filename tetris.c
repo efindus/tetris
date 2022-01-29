@@ -9,6 +9,12 @@
 #include <limits.h>
 #include <signal.h>
 
+// TODO: parse xset q output to determine defaults for autorepeat
+// TODO: add wall kicks
+// TODO: make vertical stripes to make aligning pieces easier
+// TODO: add music
+// TODO: make board width even (and take it from tetris.com)
+
 // Constants
 #define HEIGHT 20
 #define WIDTH 15
@@ -312,9 +318,22 @@ void setupTermiosAttributes() {
 		reportError("[ERROR] tcsetattr()");
 }
 
+void resetTermiosAttributes() {
+	struct termios old = {0};
+	if (tcgetattr(0, &old) < 0)
+		reportError("[ERROR] tcgetattr()");
+
+	old.c_lflag |= ICANON | ECHO;
+	if (tcsetattr(0, TCSANOW, &old) < 0)
+		reportError("[ERROR] tcsetattr()");
+}
+
 void resetKeypressDelay() {
+#if USE_LINUX_ONLY_QOL_FEATURES == 1
 	system("xset r rate 600 25");
 	printf("As this program uses xset to modify input delay here is a quick tooltip how to bring back your favorite setting: xset r rate <delay> <repeats/s> or xset r rate for defaults.\n");
+#endif
+	resetTermiosAttributes();
 }
 
 void signalHandler() {
@@ -324,14 +343,15 @@ void signalHandler() {
 void initialize() {
 #if USE_LINUX_ONLY_QOL_FEATURES == 1
 	system("xset r rate 150 25");
-	atexit(resetKeypressDelay);
-	at_quick_exit(*resetKeypressDelay);
-	signal(SIGTERM, signalHandler);
-	signal(SIGINT, signalHandler);
 #endif
 	setupBoard();
 	createNewTetromino();
 	setupTermiosAttributes();
+
+	atexit(resetKeypressDelay);
+	at_quick_exit(resetKeypressDelay);
+	signal(SIGTERM, signalHandler);
+	signal(SIGINT, signalHandler);
 
 	setupScreenManager();
 }
