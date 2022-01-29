@@ -13,11 +13,10 @@
 // TODO: add wall kicks
 // TODO: make vertical stripes to make aligning pieces easier
 // TODO: add music
-// TODO: make board width even (and take it from tetris.com)
 
 // Constants
-#define HEIGHT 20
-#define WIDTH 15
+#define HEIGHT 22
+#define WIDTH 10
 #define TPS 2
 
 // Toggles
@@ -43,7 +42,7 @@ typedef struct TetrominoState {
  */
 Point tetrominos[][4] = {
 	{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } },
-	{ { 0, 0 }, { 1, 0 }, { -1, 0 }, { -2, 0 } },
+	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 2, 0 } },
 	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 1, 1 } },
 	{ { 0, 0 }, { 1, 0 }, { -1, 0 }, { -1, 1 } },
 	{ { 0, 0 }, { -1, 0 }, { 0, 1 }, { 1, 1 } },
@@ -221,7 +220,7 @@ int checkCollision(TetrominoState tetrominoState) {
  * Randomly selects new tetromino type and places it in the default position
  */
 void createNewTetromino() {
-	currentTetromino.position = (Point){ WIDTH / 2, HEIGHT - 2 };
+	currentTetromino.position = (Point){ WIDTH / 2 - 1, HEIGHT - 2 };
 	currentTetromino.id = crandom(0, 6);
 	currentTetromino.rotation = 0;
 
@@ -337,7 +336,7 @@ void resetKeypressDelay() {
 }
 
 void signalHandler() {
-	exit(0);
+	exit(1);
 }
 
 void initialize() {
@@ -348,8 +347,8 @@ void initialize() {
 	createNewTetromino();
 	setupTermiosAttributes();
 
-	atexit(resetKeypressDelay);
-	at_quick_exit(resetKeypressDelay);
+	atexit(*resetKeypressDelay);
+	at_quick_exit(*resetKeypressDelay);
 	signal(SIGTERM, signalHandler);
 	signal(SIGINT, signalHandler);
 
