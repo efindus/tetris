@@ -1,4 +1,5 @@
 #include <sys/random.h>
+#include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include <pthread.h>
 #include <limits.h>
 #include <signal.h>
+#include <errno.h>
 
 // TODO: parse xset q output to determine defaults for autorepeat
 // TODO: add wall kicks
@@ -72,11 +74,16 @@ TetrominoState currentTetromino;
 int rowsCleared = 0;
 
 pthread_t renderThread;
-pthread_t gameplayThread;
 // Use this condition variable to render a frame after locking drawMutex
 pthread_cond_t triggerDraw = PTHREAD_COND_INITIALIZER;
 // Lock this mutex before modifying contents of currentTetromino
 pthread_mutex_t drawMutex = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_t gameplayThread;
+// Use this condition variable to cancel piece droping after locking drawMutex
+pthread_cond_t cancelDrop = PTHREAD_COND_INITIALIZER;
+// Lock this mutex before signaling cancelDrop
+pthread_mutex_t gameplayMutex = PTHREAD_MUTEX_INITIALIZER;
 
 int strcomp(char* str1, char* str2, int checkLength) {
 	if (checkLength && strlen(str1) != strlen(str2)) return 0;
@@ -291,13 +298,27 @@ void setupScreenManager() {
 }
 
 void *gameplayManager() {
-	struct timespec time;
-	time.tv_sec = 0;
-	time.tv_nsec = 1000 * 1000 * (1000 / TPS);
+	struct timeval now;
+	struct timespec waitUntil;
+	long long delayNs = 1000 * 1000 * (1000 / TPS), overflow;	
 
+	pthread_mutex_lock(&gameplayMutex);
 	while (1) {
-		if (nanosleep(&time, NULL) < 0)
-			reportError("[ERROR] nanosleep()");
+		gettimeofday(&now, NULL);
+		waitUntil.tv_sec = now.tv_sec;
+		overflow = (delayNs / 1000 + now.tv_usec) - (1000 * 1000);
+		if (overflow >= 0) {
+			waitUntil.tv_sec++;
+			waitUntil.tv_nsec = overflow * 1000;
+		} else {
+			waitUntil.tv_nsec = now.tv_usec * 1000 + delayNs;
+		}
+
+		if (pthread_cond_timedwait(&cancelDrop, &gameplayMutex, &waitUntil) == 0) {
+			continue;
+		} else {
+			if (errno != 0 && errno != EAGAIN && errno != ETIMEDOUT) reportError("[ERROR] pthread_cond_timedwait()");
+		}
 
 		tick();
 	}
