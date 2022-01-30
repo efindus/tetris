@@ -13,7 +13,6 @@
 
 // TODO: parse xset q output to determine defaults for autorepeat
 // TODO: add wall kicks
-// TODO: add music
 
 // Constants
 #define HEIGHT 22
@@ -72,6 +71,8 @@ char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
 
 TetrominoState currentTetromino;
 int rowsCleared = 0;
+
+int mpvSubprocessPID = -1;
 
 pthread_t renderThread;
 // Use this condition variable to render a frame after locking drawMutex
@@ -352,21 +353,50 @@ void resetTermiosAttributes() {
 		reportError("[ERROR] tcsetattr()");
 }
 
+void setupXset() {
+	system("xset r rate 150 25");
+}
+
 void resetKeypressDelay() {
 #if USE_LINUX_ONLY_QOL_FEATURES == 1
 	system("xset r rate 600 25");
 	printf("As this program uses xset to modify input delay here is a quick tooltip how to bring back your favorite setting: xset r rate <delay> <repeats/s> or xset r rate for defaults.\n");
+	kill(mpvSubprocessPID, SIGKILL);
 #endif
 	resetTermiosAttributes();
 }
 
 void signalHandler() {
-	exit(1);
+	exit(0);
+}
+
+int startmpv() {
+	int p_stdin[2], p_stdout[2], p_stderr[2];
+	if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0 || pipe(p_stderr) != 0)
+        return -1;
+
+	int pid = fork();
+
+	if (pid < 0) {
+		reportError("[ERROR] fork()");
+	} else if (pid == 0) {
+		close(p_stdin[1]);
+        dup2(p_stdin[0], 0);
+        close(p_stdout[0]);
+        dup2(p_stdout[1], 1);
+		close(p_stderr[0]);
+        dup2(p_stderr[1], 2);
+		execvp("mpv", (char*[]){ "mpv",  "--no-audio-display",  "--loop", "./soundtrack.mp3", NULL });
+		exit(1);
+	}
+
+	return pid;
 }
 
 void initialize() {
 #if USE_LINUX_ONLY_QOL_FEATURES == 1
-	system("xset r rate 150 25");
+	setupXset();
+	mpvSubprocessPID = startmpv();
 #endif
 	setupBoard();
 	createNewTetromino();
