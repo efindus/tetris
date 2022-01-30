@@ -13,7 +13,6 @@
 
 // TODO: parse xset q output to determine defaults for autorepeat
 // TODO: add wall kicks
-// TODO: make vertical stripes to make aligning pieces easier
 // TODO: add music
 
 // Constants
@@ -26,7 +25,8 @@
 #define USE_LINUX_ONLY_QOL_FEATURES 1
 
 // Drawing blocks
-#define VOID "\x1b[0m  "
+#define VOID "\x1b[48;5;235m  "
+#define VOID_2 "\x1b[48;5;236m  "
 #define BORDER "\x1b[44m  "
 
 typedef struct Point {
@@ -118,8 +118,11 @@ void reportError(char* message) {
 
 void setupBoard() {
 	for (int x = 1; x < WIDTH + 1; x++)
-		for (int y = 1; y < HEIGHT + 1; y++)
-			strcpy(board[x][y], VOID);
+		for (int y = 1; y < HEIGHT + 1; y++) {
+			if (x % 2 == 0) strcpy(board[x][y], VOID_2);
+			else strcpy(board[x][y], VOID);
+		}
+			
 	
 	for (int y = 0; y < HEIGHT + 1; y++) {
 		strcpy(board[0][y], BORDER);
@@ -212,7 +215,7 @@ int checkCollision(TetrominoState tetrominoState) {
 	for (int i = 0; i < 4; i++) {
 		int x = tetrominoState.position.x + tetromino[i].x + 1, y = tetrominoState.position.y + tetromino[i].y + 1;
 		if (0 <= x && x < WIDTH + 2 && 0 <= y && y < HEIGHT + 1) {
-			if (!strcomp(board[x][y], VOID, 1)) {
+			if (!strcomp(board[x][y], VOID, 1) && !strcomp(board[x][y], VOID_2, 1)) {
 				result = 1;
 				break;
 			}
@@ -257,7 +260,8 @@ void cleanupBoard() {
 			}
 
 			for (int x2 = 1; x2 < WIDTH + 1; x2++) {
-				strcpy(board[x2][HEIGHT], VOID);
+				if (x2 % 2 == 0) strcpy(board[x2][HEIGHT], VOID_2);
+				else strcpy(board[x2][HEIGHT], VOID);
 			}
 
 			y--;
