@@ -384,6 +384,12 @@ int main() {
 				tempTetromino.position.x++;
 				break;
 			}
+			case ' ': {
+				while(!checkCollision(tempTetromino)) {
+					tempTetromino.position.y--;
+				}
+				tempTetromino.position.y++;
+			}
 		}
 
 		if (!checkCollision(tempTetromino)) {
@@ -391,8 +397,13 @@ int main() {
 
 			currentTetromino = tempTetromino;
 
-			pthread_cond_signal(&triggerDraw);
-			pthread_mutex_unlock(&drawMutex);
+			if (x == ' ') {
+				pthread_mutex_unlock(&drawMutex);
+				tick();
+			} else {
+				pthread_cond_signal(&triggerDraw);
+				pthread_mutex_unlock(&drawMutex);
+			}
 		} else {
 			tempTetromino = currentTetromino;
 		}
