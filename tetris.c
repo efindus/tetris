@@ -372,6 +372,11 @@ int main() {
 				tempTetromino.rotation %= 4;
 				break;
 			}
+			case 'z': {
+				tempTetromino.rotation--;
+				if (tempTetromino.rotation < 0) tempTetromino.rotation = 3;
+				break;
+			}
 			case 's': {
 				tempTetromino.position.y--;
 				break;
