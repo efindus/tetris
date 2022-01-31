@@ -155,18 +155,8 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	for (int i = 0; i < 4; i++) returnValue[i] = tetrominos[tetrominoId][i];
 
 	if (tetrominoId == 1) {
-		switch (rotation) {
-			case 1:
-				for (int i = 0; i < 4; i++) returnValue[i].y++;
-			case 0: {
-				for (int i = 0; i < 4; i++) returnValue[i].x++;
-				break;
-			}
-			case 2: {
-				for (int i = 0; i < 4; i++) returnValue[i].y++;
-				break;
-			}
-		}
+		if (rotation != 3) for (int i = 0; i < 4; i++) returnValue[i].y++;
+		if (rotation == 0) for (int i = 0; i < 4; i++) returnValue[i].x++;
 	}
 
 	if (tetrominoId != 0) {
