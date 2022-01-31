@@ -1,4 +1,3 @@
-#include <sys/random.h>
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -104,7 +103,7 @@ int strcomp(char* str1, char* str2, int checkLength) {
 
 int crandom(int min, int max) {
 	unsigned int value;
-	getrandom(&value, sizeof(value), GRND_RANDOM);
+	getentropy(&value, sizeof(value));
 
 	return (int)((long long)value * (max - min + 1) / UINT_MAX) + min;
 }
