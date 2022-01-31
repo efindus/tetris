@@ -373,7 +373,7 @@ void signalHandler() {
 int startmpv() {
 	int p_stdin[2], p_stdout[2], p_stderr[2];
 	if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0 || pipe(p_stderr) != 0)
-        return -1;
+		return -1;
 
 	int pid = fork();
 
@@ -381,11 +381,11 @@ int startmpv() {
 		reportError("[ERROR] fork()");
 	} else if (pid == 0) {
 		close(p_stdin[1]);
-        dup2(p_stdin[0], 0);
-        close(p_stdout[0]);
-        dup2(p_stdout[1], 1);
+		dup2(p_stdin[0], 0);
+		close(p_stdout[0]);
+		dup2(p_stdout[1], 1);
 		close(p_stderr[0]);
-        dup2(p_stderr[1], 2);
+		dup2(p_stderr[1], 2);
 		execvp("mpv", (char*[]){ "mpv",  "--no-audio-display",  "--loop", "./soundtrack.mp3", NULL });
 		exit(1);
 	}
