@@ -43,7 +43,7 @@ typedef struct TetrominoState {
  */
 Point tetrominos[][4] = {
 	{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } },
-	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 2, 0 } },
+	{ { 0, 0 }, { 1, 0 }, { -1, 0 }, { -2, 0 } },
 	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 1, 1 } },
 	{ { 0, 0 }, { 1, 0 }, { -1, 0 }, { -1, 1 } },
 	{ { 0, 0 }, { -1, 0 }, { 0, 1 }, { 1, 1 } },
@@ -156,7 +156,18 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	for (int i = 0; i < 4; i++) returnValue[i] = tetrominos[tetrominoId][i];
 
 	if (tetrominoId == 1) {
-		rotation %= 2;
+		switch (rotation) {
+			case 1:
+				for (int i = 0; i < 4; i++) returnValue[i].y++;
+			case 0: {
+				for (int i = 0; i < 4; i++) returnValue[i].x++;
+				break;
+			}
+			case 2: {
+				for (int i = 0; i < 4; i++) returnValue[i].y++;
+				break;
+			}
+		}
 	}
 
 	if (tetrominoId != 0) {
