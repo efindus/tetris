@@ -248,7 +248,7 @@ void cleanupBoard() {
 	for (int y = 1; y < HEIGHT + 1; y++) {
 		int amount = 0;
 		for (int x = 1; x < WIDTH + 1; x++) {
-			if (!strcomp(board[x][y], VOID, 1)) {
+			if (!strcomp(board[x][y], VOID, 1) && !strcomp(board[x][y], VOID_2, 1)) {
 				amount++;
 			}
 		}
