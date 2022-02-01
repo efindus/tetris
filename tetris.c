@@ -100,10 +100,12 @@ pthread_cond_t cancelDrop = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t gameplayMutex = PTHREAD_MUTEX_INITIALIZER;
 
 void reportError(char* message) {
-#if DEBUG == 1
 	perror(message);
 	// Because the screen is often cleared if we won't exit it will be easy to miss the message
+#if DEBUG == 1
 	exit(1);
+#else
+	system("echo Press enter to continue... && read");
 #endif
 }
 
