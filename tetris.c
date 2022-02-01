@@ -10,8 +10,6 @@
 #include <time.h>
 #include <unistd.h>
 
-// TODO: add wall kicks
-
 // Constants
 #define HEIGHT 22
 #define WIDTH 10
@@ -60,6 +58,43 @@ Point tetrominos[][4] = {
 	{ { 0, 0 }, { -1, 0 }, { 0, 1 }, { 1, 1 } },
 	{ { 0, 0 }, { 1, 0 }, { 0, 1 }, { -1, 1 } },
 	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, 1 } },
+};
+
+/*
+ * Wall kicks for all other tetrominos (except O, because it doesn't rotate)
+ * 0 > 1; 0 > 3
+ * 1 > 2; 1 > 0
+ * 2 > 3; 2 > 1
+ * 3 > 0; 3 > 2
+ */
+Point wallKicks[][5] = {
+	{ { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+	{ { 0, 0 }, { 1, 0 }, { 1, -1 }, { 0, 2 }, { 1, 2 } },
+	{ { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+	{ { 0, 0 }, { -1, 0 }, { -1, -1 }, { 0, 2 }, { -1, 2 } },
+};
+
+/*
+ * Wall kicks for I tetromino
+ * shifts same as above
+ */
+Point wallKicksI[][2][5] = {
+	{
+		{ { 0, 0 }, { -2, 0 }, { 1, 0 }, { 1, 2 }, { -2, -1 } },
+		{ { 0, 0 }, { 2, 0 }, { -1, 0 }, { -1, 2 }, { 2, -1 } },
+	},
+	{
+		{ { 0, 0 }, { -1, 0 }, { 2, 0 }, { -1, 2 }, { 2, -1 } },
+		{ { 0, 0 }, { 2, 0 }, { -1, 0 }, { 2, 1 }, { -1, -2 } },
+	},
+	{
+		{ { 0, 0 }, { 2, 0 }, { -1, 0 }, { 2, 1 }, { -1, -2 } },
+		{ { 0, 0 }, { -2, 0 }, { 1, 0 }, { -2, 1 }, { 1, -2 } },
+	},
+	{
+		{ { 0, 0 }, { -2, 0 }, { 1, 0 }, { -2, 1 }, { 1, -2 } },
+		{ { 0, 0 }, { 1, 0 }, { -2, 0 }, { 1, 2 }, { -2, -1 } },
+	},
 };
 
 /* 
@@ -209,7 +244,6 @@ void drawFrame() {
 			for (int i = 0; i < SEPARATOR_WIDTH; i++) printf("\x1b[0m  ");
 			for (int x = 0; x < 4; x++) printf("%s", comingUpBoard[x][y2]);
 		}
-
 
 		printf("\x1b[0m\n");
 	}
@@ -385,6 +419,46 @@ void cleanupBoard() {
 	}
 }
 
+/*
+ * Try to rotate passed tetrominoState according to SRS wallkick standards; rotationDirection -> 0 if increased, 1 if decreased
+ */
+int wallKick(TetrominoState *tetrominoState, int rotationDirection) {
+	int result = 0, originalRotation = tetrominoState->rotation;
+	Point originalPosition = tetrominoState->position;
+
+	if (rotationDirection == 0) {
+		tetrominoState->rotation++;
+		tetrominoState->rotation %= 4;
+	} else {
+		tetrominoState-> rotation--;
+		if (tetrominoState->rotation < 0) tetrominoState->rotation = 3;
+	}
+
+	if (tetrominoState->id == 0) return 1;
+	else if (tetrominoState->id == 1) {
+		for (int i = 0; i < 5; i++) {
+			tetrominoState->position.x = originalPosition.x + wallKicksI[originalRotation][rotationDirection][i].x;
+			tetrominoState->position.y = originalPosition.y + wallKicksI[originalRotation][rotationDirection][i].y;
+			if (!checkCollision(*tetrominoState)) {
+				result = 1;
+				break;
+			}
+		}
+	} else {
+		for (int i = 0; i < 5; i++) {
+			tetrominoState->position.x = originalPosition.x + (wallKicks[originalRotation][i].x - wallKicks[tetrominoState->rotation][i].x);
+			tetrominoState->position.y = originalPosition.y + (wallKicks[originalRotation][i].y - wallKicks[tetrominoState->rotation][i].y);
+			if (!checkCollision(*tetrominoState)) {
+				result = 1;
+				break;
+			}
+		}
+	}
+	
+
+	return result;
+}
+
 void tick() {
 	TetrominoState tempTetromino = currentTetromino;
 	tempTetromino.position.y--;
@@ -547,13 +621,11 @@ int main() {
 		tempTetromino = currentTetromino;
 		switch (x) {
 			case 'w': {
-				tempTetromino.rotation++;
-				tempTetromino.rotation %= 4;
+				wallKick(&tempTetromino, 0);
 				break;
 			}
 			case 'z': {
-				tempTetromino.rotation--;
-				if (tempTetromino.rotation < 0) tempTetromino.rotation = 3;
+				wallKick(&tempTetromino, 1);
 				break;
 			}
 			case 's': {
