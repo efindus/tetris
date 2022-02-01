@@ -10,7 +10,6 @@
 #include <time.h>
 #include <unistd.h>
 
-// TODO: parse xset q output to determine defaults for autorepeat
 // TODO: add wall kicks
 // TODO: show next 3 pieces on the right of the board
 
@@ -43,6 +42,12 @@ typedef struct TetrominoState {
 	Point position;
 	int id, rotation;
 } TetrominoState;
+
+typedef struct XsetAttributes {
+	char* toggle;
+	char* delay;
+	char * rate;
+} XsetAttributes;
 
 /* 
  * Tetrominos.
@@ -77,6 +82,7 @@ char board[WIDTH + 2][HEIGHT + 1][25];
 char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
 
 TetrominoState currentTetromino;
+XsetAttributes attributes;
 int rowsCleared = 0;
 
 int mpvSubprocessPID = -1;
@@ -115,6 +121,19 @@ int strcomp(char* str1, char* str2, int checkLength) {
 	}
 
 	return 1;
+}
+
+char* rewriteUntilSpace(char* buf, int offset) {
+	int bufSize = 0;
+	while(buf[offset + bufSize] != ' ' && buf[offset + bufSize] != '\n' && buf[offset + bufSize] != '\0') {
+		bufSize++;
+	}
+	char* dest = malloc(sizeof(char) * (bufSize + 1));
+	for (int x = 0; x < bufSize; x++) {
+		dest[x] = buf[offset + x];
+	}
+	dest[bufSize] = '\0';
+	return dest;
 }
 
 int crandom(int min, int max) {
@@ -403,7 +422,28 @@ void resetTermiosAttributes() {
 		reportError("[ERROR] tcsetattr()");
 }
 
+void readXsetAttributes() {
+	int stdoutPipe;
+	popen2((char*[]){ "xset", "q", NULL }, NULL, &stdoutPipe);
+	char buf[BUFSIZ];
+	read(stdoutPipe, buf, sizeof(buf));
+	for (int i = 0; i < (int)strlen(buf); i++) {
+		if (strcomp(buf + i, AUTOREPEAT_TOGGLE, 0)) {
+			attributes.toggle = rewriteUntilSpace(buf, i + (int)strlen(AUTOREPEAT_TOGGLE));
+		}
+
+		if (strcomp(buf + i, AUTOREPEAT_DELAY, 0)) {
+			attributes.delay = rewriteUntilSpace(buf, i + (int)strlen(AUTOREPEAT_DELAY));
+		}
+
+		if (strcomp(buf + i, AUTOREPEAT_RATE, 0)) {
+			attributes.rate = rewriteUntilSpace(buf, i + (int)strlen(AUTOREPEAT_RATE));
+		}
+	}
+}
+
 void setupXset() {
+	readXsetAttributes();
 	system("xset r rate 150 25");
 }
 
@@ -414,8 +454,14 @@ int startmpv() {
 
 void resetKeypressDelay() {
 #if USE_CONFIGURATION_SPECIFIC_QOL_FEATURES == 1
-	system("xset r rate 600 25");
-	printf("As this program uses xset to modify input delay here is a quick tooltip how to bring back your favorite setting: xset r rate <delay> <repeats/s> or xset r rate for defaults.\n");
+	char xsetCommand[BUFSIZ];
+	snprintf(xsetCommand, BUFSIZ, "xset r rate %s %s", attributes.delay, attributes.rate);
+	system(xsetCommand);
+	snprintf(xsetCommand, BUFSIZ, "xset r %s", attributes.toggle);
+	system(xsetCommand);
+	free(attributes.delay);
+	free(attributes.rate);
+	free(attributes.toggle);
 	kill(mpvSubprocessPID, SIGKILL);
 #endif
 	resetTermiosAttributes();
