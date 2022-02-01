@@ -11,7 +11,6 @@
 #include <unistd.h>
 
 // TODO: add wall kicks
-// TODO: add score and award more for multiple rows cleared
 
 // Constants
 #define HEIGHT 22
@@ -87,7 +86,7 @@ int comingUp[COMING_UP_AMOUNT];
 
 TetrominoState currentTetromino;
 XsetAttributes attributes;
-int rowsCleared = 0;
+int rowsCleared = 0, score = 0;
 
 int mpvSubprocessPID = -1;
 
@@ -217,7 +216,7 @@ void drawFrame() {
 		printf("\x1b[0m\n");
 	}
 
-	printf("\x1b[38;5;2m[SCORE] Rows cleared: %d\x1b[0m\n", rowsCleared);
+	printf("\x1b[38;5;2m[SCORE: %d] (Rows cleared: %d)\x1b[0m\n", score, rowsCleared);
 }
 
 /*
@@ -355,6 +354,8 @@ void createNewTetromino() {
  * Checks for full rows and clears them
  */
 void cleanupBoard() {
+	int originalCleared = rowsCleared;
+
 	for (int y = 1; y < HEIGHT + 1; y++) {
 		int amount = 0;
 		for (int x = 1; x < WIDTH + 1; x++) {
@@ -378,6 +379,11 @@ void cleanupBoard() {
 			y--;
 			rowsCleared++;
 		}
+	}
+
+	while(rowsCleared - originalCleared != 0) {
+		score += 50 * (rowsCleared - originalCleared);
+		originalCleared++;
 	}
 }
 
