@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Tetris written in C for GNU/Linux terminal
+# Copyright (C) 2022  efindus
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3 as published by
+# the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 available_actions=( "help" "run-debug" "run-release" "debug" "release" )
 action_description=( "prints this message" "\033[35m[DEFAULT]\033[39m compiles and runs the application with debug flags" "compiles and runs the application with optimization flags" "compiles the application with debug flags" "compiles the application with optimization flags" )
 

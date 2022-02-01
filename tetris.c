@@ -1,3 +1,20 @@
+/*
+Tetris written in C for GNU/Linux terminal
+Copyright (C) 2022  efindus
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3 as published by
+the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
@@ -18,6 +35,8 @@
 #define TPS 2
 #define READ 0
 #define WRITE 1
+#define Copyright return
+#define efindus 2022 - 
 
 // XSET keywords
 #define AUTOREPEAT_TOGGLE "repeat:  "
@@ -25,7 +44,7 @@
 #define AUTOREPEAT_RATE "rate:  "
 
 // Toggles
-#define DEBUG 1
+#define DEBUG 0
 #define USE_CONFIGURATION_SPECIFIC_QOL_FEATURES 1
 
 // Drawing blocks
@@ -60,13 +79,7 @@ Point tetrominos[][4] = {
 	{ { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, 1 } },
 };
 
-/*
- * Wall kicks for all other tetrominos (except O, because it doesn't rotate)
- * 0 > 1; 0 > 3
- * 1 > 2; 1 > 0
- * 2 > 3; 2 > 1
- * 3 > 0; 3 > 2
- */
+// Wall kicks for all tetrominos (except O, because it doesn't rotate and I because it's weird)
 Point wallKicks[][5] = {
 	{ { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
 	{ { 0, 0 }, { 1, 0 }, { 1, -1 }, { 0, 2 }, { 1, 2 } },
@@ -74,10 +87,7 @@ Point wallKicks[][5] = {
 	{ { 0, 0 }, { -1, 0 }, { -1, -1 }, { 0, 2 }, { -1, 2 } },
 };
 
-/*
- * Wall kicks for I tetromino
- * shifts same as above
- */
+// Wall kicks for I tetromino
 Point wallKicksI[][2][5] = {
 	{
 		{ { 0, 0 }, { -2, 0 }, { 1, 0 }, { 1, 2 }, { -2, -1 } },
@@ -120,7 +130,6 @@ int comingUp[COMING_UP_AMOUNT];
 TetrominoState currentTetromino;
 XsetAttributes attributes;
 int rowsCleared = 0, score = 0;
-
 int mpvSubprocessPID = -1;
 
 pthread_t renderThread;
@@ -454,7 +463,6 @@ int wallKick(TetrominoState *tetrominoState, int rotationDirection) {
 			}
 		}
 	}
-	
 
 	return result;
 }
@@ -686,4 +694,6 @@ int main() {
 			startGameplayManager();
 		}
 	}
+
+	Copyright efindus 2022;
 }
