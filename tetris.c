@@ -12,6 +12,7 @@
 
 // TODO: parse xset q output to determine defaults for autorepeat
 // TODO: add wall kicks
+// TODO: show next 3 pieces on the right of the board
 
 // Constants
 #define HEIGHT 22
@@ -225,6 +226,15 @@ int checkCollision(TetrominoState tetrominoState) {
 
 	free(tetromino);
 	return result;
+}
+
+/*
+ * Execute checkCollision() at a position one lower than the current one
+ */
+int checkLowerCollision(TetrominoState tetrominoState) {
+	tetrominoState.position.y--;
+
+	return checkCollision(tetrominoState);
 }
 
 /*
@@ -445,14 +455,31 @@ int main() {
 				break;
 			}
 			case ' ': {
-				while(!checkCollision(tempTetromino)) {
+				while(!checkLowerCollision(tempTetromino)) {
 					tempTetromino.position.y--;
 				}
-				tempTetromino.position.y++;
 			}
 		}
 
 		if (!checkCollision(tempTetromino)) {
+			switch(x) {
+				case 'w':
+				case 'z':
+				case 'a':
+				case 'd': {
+					if (checkLowerCollision(tempTetromino)) {
+						pthread_mutex_lock(&gameplayMutex);
+						pthread_cond_signal(&cancelDrop);
+						pthread_mutex_unlock(&gameplayMutex);
+					}
+					break;
+				}
+				case 's': {
+					pthread_mutex_lock(&gameplayMutex);
+					pthread_cond_signal(&cancelDrop);
+					pthread_mutex_unlock(&gameplayMutex);
+				}
+			}
 			pthread_mutex_lock(&drawMutex);
 
 			currentTetromino = tempTetromino;
