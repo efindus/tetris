@@ -21,7 +21,7 @@
 
 // Toggles
 #define DEBUG 1
-#define USE_LINUX_ONLY_QOL_FEATURES 1
+#define USE_CONFIGURATION_SPECIFIC_QOL_FEATURES 1
 
 // Drawing blocks
 #define VOID "\x1b[48;5;235m  "
@@ -368,7 +368,7 @@ void setupXset() {
 }
 
 void resetKeypressDelay() {
-#if USE_LINUX_ONLY_QOL_FEATURES == 1
+#if USE_CONFIGURATION_SPECIFIC_QOL_FEATURES == 1
 	system("xset r rate 600 25");
 	printf("As this program uses xset to modify input delay here is a quick tooltip how to bring back your favorite setting: xset r rate <delay> <repeats/s> or xset r rate for defaults.\n");
 	kill(mpvSubprocessPID, SIGKILL);
@@ -404,7 +404,7 @@ int startmpv() {
 }
 
 void initialize() {
-#if USE_LINUX_ONLY_QOL_FEATURES == 1
+#if USE_CONFIGURATION_SPECIFIC_QOL_FEATURES == 1
 	setupXset();
 	mpvSubprocessPID = startmpv();
 #endif
