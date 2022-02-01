@@ -45,9 +45,7 @@ typedef struct TetrominoState {
 } TetrominoState;
 
 typedef struct XsetAttributes {
-	char* toggle;
-	char* delay;
-	char * rate;
+	char *toggle, *delay, *rate;
 } XsetAttributes;
 
 /* 
