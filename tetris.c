@@ -18,6 +18,13 @@
 #define HEIGHT 22
 #define WIDTH 10
 #define TPS 2
+#define READ 0
+#define WRITE 1
+
+// XSET keywords
+#define AUTOREPEAT_TOGGLE "repeat:  "
+#define AUTOREPEAT_DELAY "delay:  "
+#define AUTOREPEAT_RATE "rate:  "
 
 // Toggles
 #define DEBUG 1
@@ -86,6 +93,14 @@ pthread_cond_t cancelDrop = PTHREAD_COND_INITIALIZER;
 // Lock this mutex before signaling cancelDrop
 pthread_mutex_t gameplayMutex = PTHREAD_MUTEX_INITIALIZER;
 
+void reportError(char* message) {
+#if DEBUG == 1
+	perror(message);
+	// Because the screen is often cleared if we won't exit it will be easy to miss the message
+	exit(1);
+#endif
+}
+
 int strcomp(char* str1, char* str2, int checkLength) {
 	if (checkLength && strlen(str1) != strlen(str2)) return 0;
 
@@ -95,7 +110,7 @@ int strcomp(char* str1, char* str2, int checkLength) {
 		str1 = tmp;
 	}
 
-	for (int i = 0; i < strlen(str1); i++) {
+	for (int i = 0; i < (int)strlen(str1); i++) {
 		if (str1[i] != str2[i]) return 0;
 	}
 
@@ -109,12 +124,38 @@ int crandom(int min, int max) {
 	return (int)((long long)value * (max - min + 1) / UINT_MAX) + min;
 }
 
-void reportError(char* message) {
-#if DEBUG == 1
-	perror(message);
-	// Because the screen is often cleared if we won't exit it will be easy to miss the message
-	exit(1);
-#endif
+int popen2(char *const command[], int *infp, int *outfp) {
+	int p_stdin[2], p_stdout[2], p_stderr[2];
+	if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0 || pipe(p_stderr) != 0)
+		return -1;
+
+	int pid = fork();
+
+	if (pid < 0) {
+		reportError("[ERROR] fork()");
+	} else if (pid == 0) {
+		close(p_stdin[WRITE]);
+		dup2(p_stdin[READ], 0);
+		close(p_stdout[READ]);
+		dup2(p_stdout[WRITE], 1);
+		close(p_stderr[READ]);
+		dup2(p_stderr[WRITE], 2);
+
+		execvp(*command, command);
+		_exit(0);
+	}
+
+	if (infp == NULL)
+		close(p_stdin[WRITE]);
+	else
+		*infp = p_stdin[WRITE];
+
+	if (outfp == NULL)
+		close(p_stdout[READ]);
+	else
+		*outfp = p_stdout[READ];
+
+	return pid;
 }
 
 void setupBoard() {
@@ -366,6 +407,11 @@ void setupXset() {
 	system("xset r rate 150 25");
 }
 
+int startmpv() {
+	int stdoutPipe;
+	return popen2((char*[]){ "mpv",  "--no-audio-display",  "--loop", "./soundtrack.mp3", NULL }, NULL, &stdoutPipe);
+}
+
 void resetKeypressDelay() {
 #if USE_CONFIGURATION_SPECIFIC_QOL_FEATURES == 1
 	system("xset r rate 600 25");
@@ -377,29 +423,6 @@ void resetKeypressDelay() {
 
 void signalHandler() {
 	exit(0);
-}
-
-int startmpv() {
-	int p_stdin[2], p_stdout[2], p_stderr[2];
-	if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0 || pipe(p_stderr) != 0)
-		return -1;
-
-	int pid = fork();
-
-	if (pid < 0) {
-		reportError("[ERROR] fork()");
-	} else if (pid == 0) {
-		close(p_stdin[1]);
-		dup2(p_stdin[0], 0);
-		close(p_stdout[0]);
-		dup2(p_stdout[1], 1);
-		close(p_stderr[0]);
-		dup2(p_stderr[1], 2);
-		execvp("mpv", (char*[]){ "mpv",  "--no-audio-display",  "--loop", "./soundtrack.mp3", NULL });
-		exit(1);
-	}
-
-	return pid;
 }
 
 void initialize() {
