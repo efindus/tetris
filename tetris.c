@@ -11,11 +11,13 @@
 #include <unistd.h>
 
 // TODO: add wall kicks
-// TODO: show next 3 pieces on the right of the board
+// TODO: add score and award more for multiple rows cleared
 
 // Constants
 #define HEIGHT 22
 #define WIDTH 10
+#define COMING_UP_AMOUNT 3
+#define SEPARATOR_WIDTH 2
 #define TPS 2
 #define READ 0
 #define WRITE 1
@@ -80,6 +82,8 @@ char* tetrominoColors[] = {
 // Globals
 char board[WIDTH + 2][HEIGHT + 1][25];
 char frameBuffer[WIDTH + 2][HEIGHT + 1][25];
+char comingUpBoard[4][3 * COMING_UP_AMOUNT][25];
+int comingUp[COMING_UP_AMOUNT];
 
 TetrominoState currentTetromino;
 XsetAttributes attributes;
@@ -203,6 +207,13 @@ void drawFrame() {
 		for (int x = 0; x < WIDTH + 2; x++)
 			printf("%s", frameBuffer[x][y]);
 
+		int y2 = 3 * COMING_UP_AMOUNT - 1 - (HEIGHT - y);
+		if (y2 >= 0) {
+			for (int i = 0; i < SEPARATOR_WIDTH; i++) printf("\x1b[0m  ");
+			for (int x = 0; x < 4; x++) printf("%s", comingUpBoard[x][y2]);
+		}
+
+
 		printf("\x1b[0m\n");
 	}
 
@@ -232,6 +243,33 @@ Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	}
 
 	return returnValue;
+}
+
+void fillComingUpBoard() {
+	for (int x = 0; x < 4; x++)
+		for (int y = 0; y < 3 * COMING_UP_AMOUNT; y++) {
+			strcpy(comingUpBoard[x][y], VOID);
+		}
+
+	for (int z = 0; z < COMING_UP_AMOUNT; z++) {
+		Point* tetromino = getRotatedTetromino(comingUp[z], 0);
+		for (int i = 0; i < 4; i++) {
+			int x = 0 + tetromino[i].x + 1, y = 3 * z + tetromino[i].y;
+			if (0 <= x && x < 4 && 0 <= y && y < 3 * COMING_UP_AMOUNT) strcpy(comingUpBoard[x][y], tetrominoColors[comingUp[z]]);
+		}
+		free(tetromino);
+	}
+}
+
+void setupComingUpBoard() {
+	for (int i = 0; i < COMING_UP_AMOUNT; i++) comingUp[i] = crandom(0, 6);
+	fillComingUpBoard();
+}
+
+void consumeComingUpTetromino() {
+	for (int i = COMING_UP_AMOUNT - 1; i > 0; i--) comingUp[i] = comingUp[i - 1];
+	comingUp[0] = crandom(0, 6);
+	fillComingUpBoard();
 }
 
 /* 
@@ -303,8 +341,9 @@ int checkLowerCollision(TetrominoState tetrominoState) {
  */
 void createNewTetromino() {
 	currentTetromino.position = (Point){ WIDTH / 2 - 1, HEIGHT - 2 };
-	currentTetromino.id = crandom(0, 6);
 	currentTetromino.rotation = 0;
+	currentTetromino.id = comingUp[COMING_UP_AMOUNT - 1];
+	consumeComingUpTetromino();
 
 	if (checkCollision(currentTetromino)) {
 		printf("\x1b[38;5;196mGame Over!\x1b[0m\n");
@@ -479,6 +518,7 @@ void initialize() {
 	mpvSubprocessPID = startmpv();
 #endif
 	setupBoard();
+	setupComingUpBoard();
 	createNewTetromino();
 	setupTermiosAttributes();
 
