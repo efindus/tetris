@@ -94,7 +94,7 @@ pthread_cond_t triggerDraw = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t drawMutex = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_t gameplayThread;
-// Use this condition variable to cancel piece droping after locking drawMutex
+// Use this condition variable to cancel piece droping after locking gameplayMutex
 pthread_cond_t cancelDrop = PTHREAD_COND_INITIALIZER;
 // Lock this mutex before signaling cancelDrop
 pthread_mutex_t gameplayMutex = PTHREAD_MUTEX_INITIALIZER;
