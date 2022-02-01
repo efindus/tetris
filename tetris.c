@@ -1,14 +1,14 @@
-#include <sys/time.h>
+#include <errno.h>
+#include <limits.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <termios.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <limits.h>
 #include <signal.h>
-#include <errno.h>
+#include <sys/time.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
 
 // TODO: parse xset q output to determine defaults for autorepeat
 // TODO: add wall kicks
