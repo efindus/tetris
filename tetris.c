@@ -149,7 +149,6 @@ void drawFrame() {
 
 /*
  * rotation -> (0, 1, 2, 3) ordered as in here https://cdn.wikimg.net/en/strategywiki/images/7/7f/Tetris_rotation_super.png
- * but for I shaped tetromino there are only two possible rotations
  */
 Point* getRotatedTetromino(int tetrominoId, int rotation) {
 	Point* returnValue = malloc(sizeof(Point) * 4);
