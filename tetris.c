@@ -346,7 +346,7 @@ void createNewTetromino() {
 	consumeComingUpTetromino();
 
 	if (checkCollision(currentTetromino)) {
-		printf("\x1b[38;5;196mGame Over!\x1b[0m\n");
+		printf("\x1b[48;5;196mGame Over!\x1b[0m\n");
 		exit(0);
 	}
 }
